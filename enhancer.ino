@@ -21,12 +21,9 @@ Mode and Median filters are recommended.
 // Which pin on the Arduino is connected to the NeoPixels?
 // On a Trinket or Gemma we suggest changing this to 1
 #define PIN            13
-#define PIN2 12
-#define PIN3 11
 
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS      60
-#define NUMPIXELS2     8
 
 // 
 // == Servos
