@@ -64,9 +64,6 @@ long tmp_dist;
 // example for more information on possible values.
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN);
 
-Adafruit_NeoPixel strip1 = Adafruit_NeoPixel(8, PIN2, NEO_GRB + NEO_KHZ800);
-Adafruit_NeoPixel strip2 = Adafruit_NeoPixel(8, PIN3, NEO_GRB + NEO_KHZ800);
-
 int delayval = 2; // delay for half a second
 
 unsigned long current_millis = 0;
@@ -88,11 +85,8 @@ void setup() {
     if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
   #endif
     // End of trinket special code
-  
+    
     pixels.begin(); // This initializes the NeoPixel library.
-
-    strip1.begin();
-    strip2.begin();
 }
 
 void read_sensors(){
@@ -157,12 +151,7 @@ void loop() {
     Serial.print(map_val2);
     Serial.print(" inches");
     Serial.println();
-
-    for(int i=0;i<NUMPIXELS2;i++){
-      strip1.setPixelColor(i, strip1.Color(map_val1, map_val1, map_val1));
-      strip2.setPixelColor(i, strip2.Color(map_val2, map_val2, map_val2));
-    }
-    
+        
     for(int i=0;i<NUMPIXELS;i++){
   
       if(i < 30){
@@ -173,12 +162,9 @@ void loop() {
     }
   
     pixels.show(); // This sends the updated pixel color to the hardware.
-
-    strip1.show(); // Initialize all pixels to 'off'
-    strip2.show(); // Initialize all pixels to 'off'
   }
 
-  delay(0);
+  delay(delayval);
 }
 
 // Input a value 0 to 255 to get a color value.
