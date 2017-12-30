@@ -47,13 +47,18 @@ int increment = 2;
 // 
 // == Ultrasonic
 //
-int Distance;
+// Analog Trigger Pin
+int triggerPin1 = 37;
 
-const int anPin1 = 0;
-const int anPin2 = 1;
+const int anPin0 = 0;
+const int anPin1 = 1;
+const int anPin2 = 2;
+const int anPin3 = 3;
 
+long distance0;
 long distance1;
 long distance2;
+long distance3;
 long tmp_dist;
 
 // When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
@@ -61,21 +66,21 @@ long tmp_dist;
 // example for more information on possible values.
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN);
 
-int delayval = 2; // delay for half a second
+int delayval = 200; // delay for half a second
 
 unsigned long current_millis = 0;
 unsigned long lastSensorUpdate;
 unsigned long updateSensorInterval = 50;
 
-int map_val1, map_val2;
+int map_val0, map_val1, map_val2, map_val3;
 
 // sensor read millis sudo delay
 
 void setup() {
   Serial.begin(9600);  // sets the serial port to 9600
 
-  servo.attach(9);  // attaches the servo on pin 9 to the servo object
-  servo2.attach(10);  // attaches the servo on pin 9 to the servo object
+  servo.attach(8);  // attaches the servo on pin 9 to the servo object
+  servo2.attach(9);  // attaches the servo on pin 9 to the servo object
 
   // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
   #if defined (__AVR_ATtiny85__)
@@ -92,15 +97,28 @@ void read_sensors(){
   Arduino analog pin goes from 0 to 1024, so the value has to be divided by 2 to get the actual inches
   */
 
-  if((current_millis - lastSensorUpdate) > updateSensorInterval)  // time to update
-  {
-    lastSensorUpdate = millis();
+//  if((current_millis - lastSensorUpdate) > updateSensorInterval)  // time to update
+//  {
+//    lastSensorUpdate = millis();
+    distance0 = analogRead(anPin0)/2;
     distance1 = analogRead(anPin1)/2;
     distance2 = analogRead(anPin2)/2;
-  }
+    distance3 = analogRead(anPin3)/2;
+//  }
+}
+
+void start_sensor(){
+  digitalWrite(triggerPin1,HIGH);
+  delay(1);
+  digitalWrite(triggerPin1,LOW);
 }
 
 void print_all(){
+  Serial.print("S0");
+  Serial.print(" ");
+  Serial.print(distance0);
+  Serial.print(" inches");
+  Serial.print(" || ");
   Serial.print("S1");
   Serial.print(" ");
   Serial.print(distance1);
@@ -110,13 +128,18 @@ void print_all(){
   Serial.print(" ");
   Serial.print(distance2);
   Serial.print(" inches");
+  Serial.print(" || ");
+  Serial.print("S3");
+  Serial.print(" ");
+  Serial.print(distance3);
+  Serial.print(" inches");
   Serial.println();
 }
 
 void loop() {
 
   current_millis = millis();
-  
+  start_sensor();
   read_sensors();
 //  print_all();
 
@@ -137,8 +160,15 @@ void loop() {
   }
   
   if(pos % 10 == 0){
-    map_val1 = map(distance1, 0, 350, 0, 250);
-    map_val2 = map(distance2, 0, 350, 0, 250);
+    map_val0 = map(distance0, 5, 250, 0, 250);
+    map_val1 = map(distance1, 5, 250, 0, 250);
+    map_val2 = map(distance2, 5, 250, 0, 250);
+    map_val3 = map(distance3, 5, 250, 0, 250);
+
+    Serial.print(map_val0);
+    Serial.print(" inches");
+
+    Serial.print(" || ");
 
     Serial.print(map_val1);
     Serial.print(" inches");
@@ -147,14 +177,27 @@ void loop() {
       
     Serial.print(map_val2);
     Serial.print(" inches");
+
+    Serial.print(" || ");
+      
+    Serial.print(map_val3);
+    Serial.print(" inches");
     Serial.println();
         
     for(int i=0;i<NUMPIXELS;i++){
   
-      if(i < 30){
-        pixels.setPixelColor(i, pixels.Color(map_val1, map_val1, map_val1));            
-      } else {
+      if(i < 15)
+      {
+        pixels.setPixelColor(i, pixels.Color(map_val0, map_val0, map_val0));
+      } else if(i < 30)
+      {
+        pixels.setPixelColor(i, pixels.Color(map_val1, map_val1, map_val1));
+      } else if(i < 45)
+      {
         pixels.setPixelColor(i, pixels.Color(map_val2, map_val2, map_val2));
+      }else
+      {
+        pixels.setPixelColor(i, pixels.Color(map_val3, map_val3, map_val3));
       }  
     }
   
