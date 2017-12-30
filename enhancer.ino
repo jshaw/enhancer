@@ -37,7 +37,8 @@ int max_degree = 120;
 int pos = 90;    // variable to store the servo position
 unsigned long lastUpdate; // last update of position
 
-int  updateInterval = 50;      // interval between updates
+//int  updateInterval = 50;      // interval between updates
+int  updateInterval = 200;      // interval between updates
 int increment = 2;
 
 // This seems to be smooths than above intervals and increments
@@ -66,7 +67,7 @@ long tmp_dist;
 // example for more information on possible values.
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN);
 
-int delayval = 200; // delay for half a second
+int delayval = 2; // delay for half a second
 
 unsigned long current_millis = 0;
 unsigned long lastSensorUpdate;
@@ -97,14 +98,14 @@ void read_sensors(){
   Arduino analog pin goes from 0 to 1024, so the value has to be divided by 2 to get the actual inches
   */
 
-//  if((current_millis - lastSensorUpdate) > updateSensorInterval)  // time to update
-//  {
-//    lastSensorUpdate = millis();
+  if((current_millis - lastSensorUpdate) > updateSensorInterval)  // time to update
+  {
+    lastSensorUpdate = millis();
     distance0 = analogRead(anPin0)/2;
     distance1 = analogRead(anPin1)/2;
     distance2 = analogRead(anPin2)/2;
     distance3 = analogRead(anPin3)/2;
-//  }
+  }
 }
 
 void start_sensor(){
