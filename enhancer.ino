@@ -108,11 +108,26 @@ bool animate_hsb = true;
 bool animate_sb = true;
 bool animate_noise = true;
 
+
+
+// TODO: when paused, default to the non-interactive rainbow rotation
+boolean paused = false;
+
+// control mode
+String mode = "stop";
+// defaults to stop
+int incomingByte = 115;
+
+
+
 void setup(void) {
   Serial.begin(115200);  // sets the serial port to 9600
-//  servo.attach(SERVO_PIN, SERVO_MIN, SERVO_MAX);
-  servo0.attach(SERVO_PIN0);  // attaches the servo on pin 9 to the servo object
-  servo1.attach(SERVO_PIN1);  // attaches the servo on pin 9 to the servo object
+
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+  massAttatch();
   
   strip.begin();
 
@@ -131,131 +146,193 @@ void setup(void) {
   for (uint8_t i = 1; i < OBJECT_NUM; i++) {
     pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
   }
+
+  establishContact();
 }
 
-void loop(void) {
-//  int a, x;
-//  a = analogRead(0);                            // 0 to 1023
-//  x = map(a, 0, 1023, SERVO_MIN, SERVO_MAX);    // Scale to servo range
-//  servo.write(x);                               // Move servo
-//  x = map(a, 0, 1023, 0, strip.numPixels());    // Scale to strip length
-//  strip.clear();
-//  while(x--) strip.setPixelColor(x, 255, 0, 0); // Set pixels
-//  strip.show();                                 // Update strip
+void establishContact() {
+  while (Serial.available() <= 0) {
+    //send a capital A
+    Serial.println('A');
+    delay(300);
+  }
+}
 
-    current_millis = millis();
+void loop() {
+  // read the incoming byte:
+  if (Serial.available() > 0) {
+    incomingByte = Serial.read();
+    Serial.println("Character: " + incomingByte);
+  }
 
-    for (uint8_t i = 0; i < OBJECT_NUM; i++) {
-      ping_current_millis = millis();
+  // Different Key Codes
+  // =================
   
-      // Is it this sensor's time to ping?
-      if (ping_current_millis >= pingTimer[i]) {
-        // Set next time this sensor will be pinged.
-        pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
-        start_sensor();
-        distance[i] = analogRead(sensorPins[i])/2;
-        mappedDistance[i] = map(distance[i], 0, 350, 0, 250);
-      }
+  // Go
+  // g = 103
+
+  // Stop
+  // s = 115
+
+  // Next
+  // n = 110
+
+  // Previous
+  // p = 112
+
+  // Configure
+  // c = 99
+
+  // Mode Controles + hex values
+  // 1 = Sweep / 49
+  // 4 = noise / 52
+  // 8 = rainbow/paused 56 
+
+  // END OF CODES
+  // ==================
+
+  if (incomingByte == 103) {
+    massAttatch();
+    mode = "sweep";
+  // STOP movement
+  } else if (incomingByte == 115) {
+    mode = "stop";
+    pos = 90;
+    servo0.write(pos);
+    servo1.write(pos);
+    delay(500);
+    massDetatch();
+    return;
+  } else if (incomingByte == 49) {
+    massAttatch();
+    mode = "sweep";
+  }
+
+  current_millis = millis();
+
+  for (uint8_t i = 0; i < OBJECT_NUM; i++) {
+    ping_current_millis = millis();
+
+    // Is it this sensor's time to ping?
+    if (ping_current_millis >= pingTimer[i]) {
+      // Set next time this sensor will be pinged.
+      pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
+      start_sensor();
+      distance[i] = analogRead(sensorPins[i])/2;
+      mappedDistance[i] = map(distance[i], 0, 350, 0, 250);
     }
+  }
 
-    if(pos % 10 == 0){
+  if(pos % 10 == 0){
+    
+    int pixels_per_section = NUMPIXELS / OBJECT_NUM;
+    
+    for(int i=0; i<OBJECT_NUM;i++){
+
+      for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
+        int pixl = j;
+
+        if(animate_hsb == false){
+          strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+        } else {
+          int hue = map(mappedDistance[i],0, 400,0, 359);     // hue is a number between 0 and 360
+
+          if(animate_sb = true){
+            // saturation is a number between 0 - 255
+
+            nh = snh.noise(xh, y);
+            xh += increase_sb;
+
+            // this works for when it's being used for brightness..
+            // posh = (int)map(nh*100, -100, 100, 0, 255);
+
+            // this works best for saturation
+            posh = (int)map(nh*100, -100, 100, 100, 255);
       
-      int pixels_per_section = NUMPIXELS / OBJECT_NUM;
-      
-      for(int i=0; i<OBJECT_NUM;i++){
-
-        for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
-          int pixl = j;
-
-          if(animate_hsb == false){
-            strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+            saturation = posh;
+            brightness = 255;
           } else {
-            int hue = map(mappedDistance[i],0, 400,0, 359);     // hue is a number between 0 and 360
-
-            if(animate_sb = true){
-              // saturation is a number between 0 - 255
-
-              nh = snh.noise(xh, y);
-              xh += increase_sb;
-
-              // this works for when it's being used for brightness..
-              // posh = (int)map(nh*100, -100, 100, 0, 255);
-
-              // this works best for saturation
-              posh = (int)map(nh*100, -100, 100, 100, 255);
-        
-              saturation = posh;
-              brightness = 255;
-            } else {
-              // saturation is a number between 0 - 255
-              saturation = 255;
-              brightness = 255;
-            }
-            
-
-            // This parsing was incluenced by the following post...
-            // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
-            String returnVal = getRGB(hue, saturation, brightness);
-            // Serial.println(returnVal);
-
-            int commaIndex = returnVal.indexOf('/');
-            int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
-
-            String firstValue = returnVal.substring(0, commaIndex);
-            String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
-            String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
-
-            int r = firstValue.toInt();
-            int g = secondValue.toInt();
-            int b = thirdValue.toInt();
-            
-            strip.setPixelColor(pixl, strip.Color(r, g, b));
+            // saturation is a number between 0 - 255
+            saturation = 255;
+            brightness = 255;
           }
+          
 
-          // TODO:
-          // There could be something super cool by randomly selecting what RGB values are static and have one 
-          // rgb value represented by sensors
-          // OR OR OR
-          // could be super cool to have noise values for two of three RGB and one controlled by light
+          // This parsing was incluenced by the following post...
+          // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
+          String returnVal = getRGB(hue, saturation, brightness);
+          // Serial.println(returnVal);
+
+          int commaIndex = returnVal.indexOf('/');
+          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+
+          String firstValue = returnVal.substring(0, commaIndex);
+          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+
+          int r = firstValue.toInt();
+          int g = secondValue.toInt();
+          int b = thirdValue.toInt();
+          
+          strip.setPixelColor(pixl, strip.Color(r, g, b));
         }
+
+        // TODO:
+        // There could be something super cool by randomly selecting what RGB values are static and have one 
+        // rgb value represented by sensors
+        // OR OR OR
+        // could be super cool to have noise values for two of three RGB and one controlled by light
       }
-    
-      strip.show(); // This sends the updated pixel color to the hardware.
     }
-    
-    if((current_millis - lastUpdate) > updateInterval)  // time to update
-    {
-      lastUpdate = millis();
-
-      if(animate_noise == false){
-        pos += increment;
-        
-        if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
-        {
-          // reverse direction
-          increment = -increment;
-        }
-      } else{
-        n0 = sn0.noise(x0, y);
-        n1 = sn1.noise(x1, y);
-        x0 += increase;
-        x1 += increase;
   
-        pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
-        pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
-
-        servo0.write(pos0);
-        servo1.write(pos1);
-      }
-    }
+    strip.show(); // This sends the updated pixel color to the hardware.
+  }
+  
+  if((current_millis - lastUpdate) > updateInterval)  // time to update
+  {
+    lastUpdate = millis();
 
     if(animate_noise == false){
-      servo0.write(pos);
-      servo1.write(pos);
-    }
+      pos += increment;
+      
+      if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
+      {
+        // reverse direction
+        increment = -increment;
+      }
+    } else{
+      n0 = sn0.noise(x0, y);
+      n1 = sn1.noise(x1, y);
+      x0 += increase;
+      x1 += increase;
 
-    delay(2);
+      // TODO: turn this into a function
+      pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+      pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+
+      servo0.write(pos0);
+      servo1.write(pos1);
+    }
+  }
+
+  if(animate_noise == false){
+    servo0.write(pos);
+    servo1.write(pos);
+  }
+
+  delay(2);
   
+}
+
+void massAttatch() {
+  // servo.attach(SERVO_PIN, SERVO_MIN, SERVO_MAX);
+  servo0.attach(SERVO_PIN0);  // attaches the servo on pin 9 to the servo object
+  servo1.attach(SERVO_PIN1);  // attaches the servo on pin 9 to the servo object
+}
+
+void massDetatch() {
+  servo0.detach();
+  servo1.detach();
 }
 
 // Debugging
