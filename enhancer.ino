@@ -16,6 +16,9 @@ Mode and Median filters are recommended.
 #if defined(__AVR_ATtiny85__)
  #error "This code is for ATmega boards, see other example for ATtiny."
 #endif
+
+#include <SimplexNoise.h>
+
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_TiCoServo.h>
 
@@ -63,6 +66,31 @@ unsigned long pingTimer[OBJECT_NUM];
 unsigned int cm[OBJECT_NUM];         // Where the ping distances are stored.
 uint8_t currentSensor = 0;          // Keeps track of which sensor is active.
 
+// HSB vars
+// ===========
+SimplexNoise snh;
+int saturation = 255;
+int brightness = 255;
+double nh;
+float xh = 0.0;
+int posh = 90;
+float increase_sb = 0.0005;
+
+// Noise vars
+// ===========
+SimplexNoise sn0;
+SimplexNoise sn1;
+//SimplexNoise sn[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+double n0;
+double n1;
+float increase = 0.01;
+float x0 = 0.0;
+float x1 = 0.0;
+float y = 0.0;
+
+int pos0 = 90;
+int pos1 = 90;
+
 
 // Start of customizable variables
 // ===========================
@@ -76,7 +104,9 @@ int increment = 1;
 // ================
 unsigned long ping_current_millis;
 
-bool animate_alpha = true;
+bool animate_hsb = true;
+bool animate_sb = true;
+bool animate_noise = true;
 
 void setup(void) {
   Serial.begin(115200);  // sets the serial port to 9600
@@ -85,6 +115,11 @@ void setup(void) {
   servo1.attach(SERVO_PIN1);  // attaches the servo on pin 9 to the servo object
   
   strip.begin();
+
+  xh = random(0.0, 20.0);
+
+  x0 = random(0.0, 20.0);
+  x1 = random(0.0, 20.0);
 
   // Sensor Setup
   // ============
@@ -125,37 +160,38 @@ void loop(void) {
 
     if(pos % 10 == 0){
       
-//      Serial.print(" NUMPIXELS:" );
-//      Serial.println(NUMPIXELS);
-
-//      Serial.print(" OBJECT_NUM:" );
-//      Serial.println(OBJECT_NUM);
-
-      
       int pixels_per_section = NUMPIXELS / OBJECT_NUM;
-
-//      Serial.print(" sections:" );
-//      Serial.println(sections);
-//      Serial.print(" pixels_per_section:" );
-//      Serial.println(pixels_per_section);
       
       for(int i=0; i<OBJECT_NUM;i++){
-//        Serial.println("");
-//        Serial.println("###################");
-//        Serial.print(" i:" );
-//        Serial.println(i);
-//        Serial.println("-------------------");
+
         for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
           int pixl = j;
-//          Serial.print(" pixl:" );
-//          Serial.println(pixl);
 
-          if(animate_alpha == false){
+          if(animate_hsb == false){
             strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
           } else {
             int hue = map(mappedDistance[i],0, 400,0, 359);     // hue is a number between 0 and 360
-            int saturation = 255;                               // saturation is a number between 0 - 255
-            int brightness = 255;
+
+            if(animate_sb = true){
+              // saturation is a number between 0 - 255
+
+              nh = snh.noise(xh, y);
+              xh += increase_sb;
+
+              // this works for when it's being used for brightness..
+              // posh = (int)map(nh*100, -100, 100, 0, 255);
+
+              // this works best for saturation
+              posh = (int)map(nh*100, -100, 100, 100, 255);
+        
+              saturation = posh;
+              brightness = 255;
+            } else {
+              // saturation is a number between 0 - 255
+              saturation = 255;
+              brightness = 255;
+            }
+            
 
             // This parsing was incluenced by the following post...
             // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
@@ -175,10 +211,14 @@ void loop(void) {
             
             strip.setPixelColor(pixl, strip.Color(r, g, b));
           }
+
+          // TODO:
+          // There could be something super cool by randomly selecting what RGB values are static and have one 
+          // rgb value represented by sensors
+          // OR OR OR
+          // could be super cool to have noise values for two of three RGB and one controlled by light
         }
       }
-
-//      Serial.println("==============================");
     
       strip.show(); // This sends the updated pixel color to the hardware.
     }
@@ -186,17 +226,33 @@ void loop(void) {
     if((current_millis - lastUpdate) > updateInterval)  // time to update
     {
       lastUpdate = millis();
-      pos += increment;
-      
-      if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
-      {
-        // reverse direction
-        increment = -increment;
+
+      if(animate_noise == false){
+        pos += increment;
+        
+        if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
+        {
+          // reverse direction
+          increment = -increment;
+        }
+      } else{
+        n0 = sn0.noise(x0, y);
+        n1 = sn1.noise(x1, y);
+        x0 += increase;
+        x1 += increase;
+  
+        pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+
+        servo0.write(pos0);
+        servo1.write(pos1);
       }
     }
-    
-    servo0.write(pos);
-    servo1.write(pos);
+
+    if(animate_noise == false){
+      servo0.write(pos);
+      servo1.write(pos);
+    }
 
     delay(2);
   
