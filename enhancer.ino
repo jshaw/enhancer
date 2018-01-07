@@ -1,3 +1,9 @@
+// ---------------------------------------------------------------------------
+// Enhancer
+// By: Jordan Shaw
+// Libs: Adafruit_TiCoServo, Adafruit_NeoPixel, Ultrasonic, Array
+// ---------------------------------------------------------------------------
+
 /*
 This code reads the Analog Voltage output from the
 LV-MaxSonar sensors
@@ -7,205 +13,340 @@ Please note that we do not recommend using averaging with our sensors.
 Mode and Median filters are recommended.
 */
 
-#include <Adafruit_TiCoServo.h>
-#include <Ultrasonic.h>
-
-// NeoPixel Ring simple sketch (c) 2013 Shae Erisson
-// released under the GPLv3 license to match the rest of the AdaFruit NeoPixel library
-
-#include <Adafruit_NeoPixel.h>
-#ifdef __AVR__
-  #include <avr/power.h>
+#if defined(__AVR_ATtiny85__)
+ #error "This code is for ATmega boards, see other example for ATtiny."
 #endif
 
-// Which pin on the Arduino is connected to the NeoPixels?
-// On a Trinket or Gemma we suggest changing this to 1
-#define PIN            13
+#include <SimplexNoise.h>
 
-// How many NeoPixels are attached to the Arduino?
-#define NUMPIXELS      60
+#include <Adafruit_NeoPixel.h>
+#include <Adafruit_TiCoServo.h>
 
-// 
-// == Servos
-//
-Adafruit_TiCoServo servo;  // create servo object to control a servo
-Adafruit_TiCoServo servo2;  // create servo object to control a servo
+// General Define
+// =======
+#define OBJECT_NUM  2
 
-int min_degree = 40;
-int max_degree = 120;
+// LEDS
+// =========
 
+// NeoPixel parameters. These are configurable, but the pin number must
+// be different than the servo(s).
+#define NUMPIXELS          60
+#define LED_PIN            13
+Adafruit_NeoPixel  strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
+
+// SERVOS
+// =========
+#define SERVO_PIN0    2
+#define SERVO_PIN1    3
+#define SERVO_MIN 1000 // 1 ms pulse
+#define SERVO_MAX 2000 // 2 ms pulse
+
+#define MIN_DEGREE    40
+#define MAX_DEGREE    120
+#define SERVO_PIN1    3
+
+Adafruit_TiCoServo servo0;
+Adafruit_TiCoServo servo1;
+
+// ULTRASONIC
+// =========
+#define SONAR_TIGGER_PIN   37
+// Maximum distance (in cm) to ping
+#define MAX_DISTANCE 400
+// Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
+#define PING_INTERVAL 50
+
+int sensorPins[16] = {A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15};
+int distance[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int mappedDistance[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+// Holds the times when the next ping should happen for each sensor.
+unsigned long pingTimer[OBJECT_NUM];
+unsigned int cm[OBJECT_NUM];         // Where the ping distances are stored.
+uint8_t currentSensor = 0;          // Keeps track of which sensor is active.
+
+// HSB vars
+// ===========
+SimplexNoise snh;
+int saturation = 255;
+int brightness = 255;
+double nh;
+float xh = 0.0;
+int posh = 90;
+float increase_sb = 0.0005;
+
+// Noise vars
+// ===========
+SimplexNoise sn0;
+SimplexNoise sn1;
+//SimplexNoise sn[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+double n0;
+double n1;
+float increase = 0.01;
+float x0 = 0.0;
+float x1 = 0.0;
+float y = 0.0;
+
+int pos0 = 90;
+int pos1 = 90;
+
+
+// Start of customizable variables
+// ===========================
 int pos = 90;    // variable to store the servo position
-unsigned long lastUpdate; // last update of position
-
-//int  updateInterval = 50;      // interval between updates
-int  updateInterval = 200;      // interval between updates
-int increment = 2;
-
-// This seems to be smooths than above intervals and increments
-//int  updateInterval = 18;      // interval between updates
-//int increment = 1;
-
-// 
-// == Ultrasonic
-//
-// Analog Trigger Pin
-int triggerPin1 = 37;
-
-const int anPin0 = 0;
-const int anPin1 = 1;
-const int anPin2 = 2;
-const int anPin3 = 3;
-
-long distance0;
-long distance1;
-long distance2;
-long distance3;
-long tmp_dist;
-
-// When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
-// Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
-// example for more information on possible values.
-Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN);
-
-int delayval = 2; // delay for half a second
-
 unsigned long current_millis = 0;
-unsigned long lastSensorUpdate;
-unsigned long updateSensorInterval = 50;
+unsigned long lastUpdate; // last update of position
+int  updateInterval = 18;      // interval between updates
+int increment = 1;
 
-int map_val0, map_val1, map_val2, map_val3;
+// Specific vars
+// ================
+unsigned long ping_current_millis;
 
-// sensor read millis sudo delay
+bool animate_hsb = true;
+bool animate_sb = true;
+bool animate_noise = true;
 
-void setup() {
-  Serial.begin(9600);  // sets the serial port to 9600
+// TODO: when paused, default to the non-interactive rainbow rotation
+boolean paused = false;
 
-  servo.attach(8);  // attaches the servo on pin 9 to the servo object
-  servo2.attach(9);  // attaches the servo on pin 9 to the servo object
+// control mode
+String mode = "stop";
+// defaults to stop
+int incomingByte = 115;
 
-  // This is for Trinket 5V 16MHz, you can remove these three lines if you are not using a Trinket
-  #if defined (__AVR_ATtiny85__)
-    if (F_CPU == 16000000) clock_prescale_set(clock_div_1);
-  #endif
-    // End of trinket special code
-    
-    pixels.begin(); // This initializes the NeoPixel library.
+void setup(void) {
+  Serial.begin(115200);  // sets the serial port to 9600
+  while (!Serial) {
+    ; // wait for serial port to connect. Needed for native USB port only
+  }
+
+  massAttatch();
+  
+  strip.begin();
+  xh = random(0.0, 20.0);
+
+  x0 = random(0.0, 20.0);
+  x1 = random(0.0, 20.0);
+
+  // Sensor Setup
+  // ============
+  pinMode(SONAR_TIGGER_PIN, OUTPUT);
+
+  // First ping starts at 75ms, gives time for the Arduino to chill before starting.
+  pingTimer[0] = millis() + 75;
+  // Set the starting time for each sensor.
+  for (uint8_t i = 1; i < OBJECT_NUM; i++) {
+    pingTimer[i] = pingTimer[i - 1] + PING_INTERVAL;
+  }
+
+  establishContact();
 }
 
-void read_sensors(){
-  /*
-  Scale factor is (Vcc/512) per inch. A 5V supply yields ~9.8mV/in
-  Arduino analog pin goes from 0 to 1024, so the value has to be divided by 2 to get the actual inches
-  */
-
-  if((current_millis - lastSensorUpdate) > updateSensorInterval)  // time to update
-  {
-    lastSensorUpdate = millis();
-    distance0 = analogRead(anPin0)/2;
-    distance1 = analogRead(anPin1)/2;
-    distance2 = analogRead(anPin2)/2;
-    distance3 = analogRead(anPin3)/2;
+void establishContact() {
+  while (Serial.available() <= 0) {
+    //send a capital A
+    Serial.println('A');
+    delay(300);
   }
 }
 
-void start_sensor(){
-  digitalWrite(triggerPin1,HIGH);
-  delay(1);
-  digitalWrite(triggerPin1,LOW);
+void loop() {
+  // read the incoming byte:
+  if (Serial.available() > 0) {
+    incomingByte = Serial.read();
+    Serial.println("Character: " + incomingByte);
+  }
+
+  // Different Key Codes
+  // =================
+  
+  // Go
+  // g = 103
+
+  // Stop
+  // s = 115
+
+  // Next
+  // n = 110
+
+  // Previous
+  // p = 112
+
+  // Configure
+  // c = 99
+
+  // Mode Controles + hex values
+  // 1 = Sweep / 49
+  // 4 = noise / 52
+  // 8 = rainbow/paused 56 
+
+  // END OF CODES
+  // ==================
+
+  if (incomingByte == 103) {
+    massAttatch();
+    mode = "sweep";
+  // STOP movement
+  } else if (incomingByte == 115) {
+    mode = "stop";
+    pos = 90;
+    servo0.write(pos);
+    servo1.write(pos);
+    delay(500);
+    massDetatch();
+    return;
+  } else if (incomingByte == 49) {
+    massAttatch();
+    mode = "sweep";
+  }
+
+  current_millis = millis();
+
+  for (uint8_t i = 0; i < OBJECT_NUM; i++) {
+    ping_current_millis = millis();
+
+    // Is it this sensor's time to ping?
+    if (ping_current_millis >= pingTimer[i]) {
+      // Set next time this sensor will be pinged.
+      pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
+      start_sensor();
+      distance[i] = analogRead(sensorPins[i])/2;
+      mappedDistance[i] = map(distance[i], 0, 350, 0, 250);
+    }
+  }
+
+  if(pos % 10 == 0){
+    
+    int pixels_per_section = NUMPIXELS / OBJECT_NUM;
+    
+    for(int i=0; i<OBJECT_NUM;i++){
+
+      for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
+        int pixl = j;
+
+        if(animate_hsb == false){
+          strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+        } else {
+          int hue = map(mappedDistance[i],0, 400,0, 359);     // hue is a number between 0 and 360
+
+          if(animate_sb = true){
+            // saturation is a number between 0 - 255
+
+            nh = snh.noise(xh, y);
+            xh += increase_sb;
+
+            // this works for when it's being used for brightness..
+            // posh = (int)map(nh*100, -100, 100, 0, 255);
+
+            // this works best for saturation
+            posh = (int)map(nh*100, -100, 100, 100, 255);
+      
+            saturation = posh;
+            brightness = 255;
+          } else {
+            // saturation is a number between 0 - 255
+            saturation = 255;
+            brightness = 255;
+          }
+          
+
+          // This parsing was incluenced by the following post...
+          // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
+          String returnVal = getRGB(hue, saturation, brightness);
+          // Serial.println(returnVal);
+
+          int commaIndex = returnVal.indexOf('/');
+          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+
+          String firstValue = returnVal.substring(0, commaIndex);
+          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+
+          int r = firstValue.toInt();
+          int g = secondValue.toInt();
+          int b = thirdValue.toInt();
+          
+          strip.setPixelColor(pixl, strip.Color(r, g, b));
+        }
+
+        // TODO:
+        // There could be something super cool by randomly selecting what RGB values are static and have one 
+        // rgb value represented by sensors
+        // OR OR OR
+        // could be super cool to have noise values for two of three RGB and one controlled by light
+      }
+    }
+  
+    strip.show(); // This sends the updated pixel color to the hardware.
+  }
+  
+  if((current_millis - lastUpdate) > updateInterval)  // time to update
+  {
+    lastUpdate = millis();
+
+    if(animate_noise == false){
+      pos += increment;
+      
+      if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
+      {
+        // reverse direction
+        increment = -increment;
+      }
+    } else{
+      n0 = sn0.noise(x0, y);
+      n1 = sn1.noise(x1, y);
+      x0 += increase;
+      x1 += increase;
+
+      // TODO: turn this into a function
+      pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+      pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+
+      servo0.write(pos0);
+      servo1.write(pos1);
+    }
+  }
+
+  if(animate_noise == false){
+    servo0.write(pos);
+    servo1.write(pos);
+  }
+
+  delay(2);
+  
 }
 
+void massAttatch() {
+  // servo.attach(SERVO_PIN, SERVO_MIN, SERVO_MAX);
+  servo0.attach(SERVO_PIN0);  // attaches the servo on pin 9 to the servo object
+  servo1.attach(SERVO_PIN1);  // attaches the servo on pin 9 to the servo object
+}
+
+void massDetatch() {
+  servo0.detach();
+  servo1.detach();
+}
+
+// Debugging
 void print_all(){
-  Serial.print("S0");
-  Serial.print(" ");
-  Serial.print(distance0);
-  Serial.print(" inches");
-  Serial.print(" || ");
   Serial.print("S1");
   Serial.print(" ");
-  Serial.print(distance1);
+  Serial.print(distance[0]);
   Serial.print(" inches");
   Serial.print(" || ");
   Serial.print("S2");
   Serial.print(" ");
-  Serial.print(distance2);
-  Serial.print(" inches");
-  Serial.print(" || ");
-  Serial.print("S3");
-  Serial.print(" ");
-  Serial.print(distance3);
+  Serial.print(distance[1]);
   Serial.print(" inches");
   Serial.println();
 }
 
-void loop() {
-
-  current_millis = millis();
-  start_sensor();
-  read_sensors();
-//  print_all();
-
-  // For a set of NeoPixels the first NeoPixel is 0, second is 1, all the way up to the count of pixels minus one.
-
-  if((current_millis - lastUpdate) > updateInterval)  // time to update
-  {
-    lastUpdate = millis();
-    pos += increment;
-    if ((pos >= max_degree) || (pos <= min_degree)) // end of sweep
-    {
-      // reverse direction
-      increment = -increment;
-    }
-    
-    servo.write(pos);
-    servo2.write(pos);
-  }
-  
-  if(pos % 10 == 0){
-    map_val0 = map(distance0, 5, 250, 0, 250);
-    map_val1 = map(distance1, 5, 250, 0, 250);
-    map_val2 = map(distance2, 5, 250, 0, 250);
-    map_val3 = map(distance3, 5, 250, 0, 250);
-
-    Serial.print(map_val0);
-    Serial.print(" inches");
-
-    Serial.print(" || ");
-
-    Serial.print(map_val1);
-    Serial.print(" inches");
-
-    Serial.print(" || ");
-      
-    Serial.print(map_val2);
-    Serial.print(" inches");
-
-    Serial.print(" || ");
-      
-    Serial.print(map_val3);
-    Serial.print(" inches");
-    Serial.println();
-        
-    for(int i=0;i<NUMPIXELS;i++){
-  
-      if(i < 15)
-      {
-        pixels.setPixelColor(i, pixels.Color(map_val0, map_val0, map_val0));
-      } else if(i < 30)
-      {
-        pixels.setPixelColor(i, pixels.Color(map_val1, map_val1, map_val1));
-      } else if(i < 45)
-      {
-        pixels.setPixelColor(i, pixels.Color(map_val2, map_val2, map_val2));
-      }else
-      {
-        pixels.setPixelColor(i, pixels.Color(map_val3, map_val3, map_val3));
-      }  
-    }
-  
-    pixels.show(); // This sends the updated pixel color to the hardware.
-  }
-
-  delay(delayval);
+void start_sensor(){
+  digitalWrite(SONAR_TIGGER_PIN, HIGH);
+  delay(1);
+  digitalWrite(SONAR_TIGGER_PIN, LOW);
 }
 
 // Input a value 0 to 255 to get a color value.
@@ -213,14 +354,92 @@ void loop() {
 uint32_t Wheel(byte WheelPos) {
   WheelPos = 255 - WheelPos;
   if(WheelPos < 85) {
-    return pixels.Color(255 - WheelPos * 3, 0, WheelPos * 3);
+    return strip.Color(255 - WheelPos * 3, 0, WheelPos * 3);
   }
   if(WheelPos < 170) {
     WheelPos -= 85;
-    return pixels.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+    return strip.Color(0, WheelPos * 3, 255 - WheelPos * 3);
   }
   WheelPos -= 170;
-  return pixels.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
+  return strip.Color(WheelPos * 3, 255 - WheelPos * 3, 0);
 }
 
 
+// HSB to RGB code was influenced by
+// https://www.kasperkamperman.com/blog/arduino/arduino-programming-hsb-to-rgb/
+const byte dim_curve[] = {
+    0,   1,   1,   2,   2,   2,   2,   2,   2,   3,   3,   3,   3,   3,   3,   3,
+    3,   3,   3,   3,   3,   3,   3,   4,   4,   4,   4,   4,   4,   4,   4,   4,
+    4,   4,   4,   5,   5,   5,   5,   5,   5,   5,   5,   5,   5,   6,   6,   6,
+    6,   6,   6,   6,   6,   7,   7,   7,   7,   7,   7,   7,   8,   8,   8,   8,
+    8,   8,   9,   9,   9,   9,   9,   9,   10,  10,  10,  10,  10,  11,  11,  11,
+    11,  11,  12,  12,  12,  12,  12,  13,  13,  13,  13,  14,  14,  14,  14,  15,
+    15,  15,  16,  16,  16,  16,  17,  17,  17,  18,  18,  18,  19,  19,  19,  20,
+    20,  20,  21,  21,  22,  22,  22,  23,  23,  24,  24,  25,  25,  25,  26,  26,
+    27,  27,  28,  28,  29,  29,  30,  30,  31,  32,  32,  33,  33,  34,  35,  35,
+    36,  36,  37,  38,  38,  39,  40,  40,  41,  42,  43,  43,  44,  45,  46,  47,
+    48,  48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,  60,  61,  62,
+    63,  64,  65,  66,  68,  69,  70,  71,  73,  74,  75,  76,  78,  79,  81,  82,
+    83,  85,  86,  88,  90,  91,  93,  94,  96,  98,  99,  101, 103, 105, 107, 109,
+    110, 112, 114, 116, 118, 121, 123, 125, 127, 129, 132, 134, 136, 139, 141, 144,
+    146, 149, 151, 154, 157, 159, 162, 165, 168, 171, 174, 177, 180, 183, 186, 190,
+    193, 196, 200, 203, 207, 211, 214, 218, 222, 226, 230, 234, 238, 242, 248, 255,
+};
+
+String getRGB(int hue, int sat, int val) { 
+  /* convert hue, saturation and brightness ( HSB/HSV ) to RGB
+     The dim_curve is used only on brightness/value and on saturation (inverted).
+     This looks the most natural.      
+  */
+
+  val = dim_curve[val];
+  sat = 255-dim_curve[255-sat];
+
+  int r;
+  int g;
+  int b;
+  int base;
+
+  base = ((255 - sat) * val)>>8;
+
+  switch(hue/60) {
+  case 0:
+      r = val;
+      g = (((val-base)*hue)/60)+base;
+      b = base;
+  break;
+
+  case 1:
+      r = (((val-base)*(60-(hue%60)))/60)+base;
+      g = val;
+      b = base;
+  break;
+
+  case 2:
+      r = base;
+      g = val;
+      b = (((val-base)*(hue%60))/60)+base;
+  break;
+
+  case 3:
+      r = base;
+      g = (((val-base)*(60-(hue%60)))/60)+base;
+      b = val;
+  break;
+
+  case 4:
+      r = (((val-base)*(hue%60))/60)+base;
+      g = base;
+      b = val;
+  break;
+
+  case 5:
+      r = val;
+      g = base;
+      b = (((val-base)*(60-(hue%60)))/60)+base;
+  break;
+  }
+
+  String valToReturn = String(r) + "/" + String(g) + "/" + String(b);
+  return valToReturn;
+}
