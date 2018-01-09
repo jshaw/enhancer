@@ -22,9 +22,23 @@ Mode and Median filters are recommended.
 #include <Adafruit_NeoPixel.h>
 #include <Adafruit_TiCoServo.h>
 
+// Include for which one is mega & which one is uno
+#include <EEPROM.h>
+
 // General Define
 // =======
 #define OBJECT_NUM  2
+
+// EEPRAM PANEL SOLUTION
+// 0 = Mega
+// 1 = uno
+int arduino = 0;
+int address = 1;
+
+// this value is representative of the panel ID
+// ie 0, 1
+byte arduino_byte_value = 1;
+byte a1;
 
 // LEDS
 // =========
@@ -39,15 +53,43 @@ Adafruit_NeoPixel  strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
 // =========
 #define SERVO_PIN0    2
 #define SERVO_PIN1    3
+#define SERVO_PIN2    5
+#define SERVO_PIN3    6
+#define SERVO_PIN4    7
+#define SERVO_PIN5    8
+#define SERVO_PIN6    11
+#define SERVO_PIN7    12
+#define SERVO_PIN8    13
+#define SERVO_PIN9    44
+#define SERVO_PIN10   45
+#define SERVO_PIN11   46
+#define SERVO_PIN12   5
+#define SERVO_PIN13   6
+#define SERVO_PIN14   7
+#define SERVO_PIN15   8
+
 #define SERVO_MIN 1000 // 1 ms pulse
 #define SERVO_MAX 2000 // 2 ms pulse
 
 #define MIN_DEGREE    40
 #define MAX_DEGREE    120
-#define SERVO_PIN1    3
 
 Adafruit_TiCoServo servo0;
 Adafruit_TiCoServo servo1;
+Adafruit_TiCoServo servo2;
+Adafruit_TiCoServo servo3;
+Adafruit_TiCoServo servo4;
+Adafruit_TiCoServo servo5;
+Adafruit_TiCoServo servo6;
+Adafruit_TiCoServo servo7;
+Adafruit_TiCoServo servo8;
+Adafruit_TiCoServo servo9;
+Adafruit_TiCoServo servo10;
+Adafruit_TiCoServo servo11;
+Adafruit_TiCoServo servo12;
+Adafruit_TiCoServo servo13;
+Adafruit_TiCoServo servo14;
+Adafruit_TiCoServo servo15;
 
 // ULTRASONIC
 // =========
@@ -120,16 +162,73 @@ float increase_sb = 0.0005;
 // ===========
 SimplexNoise sn0;
 SimplexNoise sn1;
+SimplexNoise sn2;
+SimplexNoise sn3;
+SimplexNoise sn4;
+SimplexNoise sn5;
+SimplexNoise sn6;
+SimplexNoise sn7;
+SimplexNoise sn8;
+SimplexNoise sn9;
+SimplexNoise sn10;
+SimplexNoise sn11;
+SimplexNoise sn12;
+SimplexNoise sn13;
+SimplexNoise sn14;
+SimplexNoise sn15;
+
 //SimplexNoise sn[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 double n0;
 double n1;
+double n3;
+double n4;
+double n5;
+double n6;
+double n7;
+double n8;
+double n9;
+double n10;
+double n11;
+double n12;
+double n13;
+double n14;
+double n15;
+
 float increase = 0.01;
 float x0 = 0.0;
 float x1 = 0.0;
+float x2 = 0.0;
+float x3 = 0.0;
+float x4 = 0.0;
+float x5 = 0.0;
+float x6 = 0.0;
+float x7 = 0.0;
+float x8 = 0.0;
+float x9 = 0.0;
+float x10 = 0.0;
+float x11 = 0.0;
+float x12 = 0.0;
+float x13 = 0.0;
+float x14 = 0.0;
+float x15 = 0.0;
 float y = 0.0;
 
 int pos0 = 90;
 int pos1 = 90;
+int pos2 = 90;
+int pos3 = 90;
+int pos4 = 90;
+int pos5 = 90;
+int pos6 = 90;
+int pos7 = 90;
+int pos8 = 90;
+int pos9 = 90;
+int pos10 = 90;
+int pos11 = 90;
+int pos12 = 90;
+int pos13 = 90;
+int pos14 = 90;
+int pos15 = 90;
 
 
 // Start of customizable variables
@@ -155,7 +254,9 @@ bool animate_hsb_fade = false;
 bool hsb_saturation = false;
 
 
-
+// TODO
+// BREAK mode
+// When the motors take a break, do the rotating wheel visuals
 
 
 // TODO: when paused, default to the non-interactive rainbow rotation
@@ -175,14 +276,48 @@ void setup(void) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
 
+  // EEPROM Panel ID solution.
+  // =========================
+  // Store the ID in memory so code updates don't have to be custom to each arduino
+  // this is uncommented if you are setting the EEPROM val
+  //EEPROM.write(address, panel_byte_value);
+
+  // This if for reading the EEPROM value
+  // this should be the panel ID from 0, 1, 2
+  //  panel = int(EEPROM.read(address));
+  a1 = EEPROM.read(address);
+  arduino = int(a1);
+
+    // If the panel value isn't anything that is expected. Default to everything is panel id 0
+  if (arduino != 0 && arduino != 1){
+    Serial.println("Why was no panel data found?");
+    arduino = 0;
+  } else {
+    Serial.println("Logging my arduino: ");  
+    Serial.print(arduino);  
+  }
+
   massAttatch();
   
   strip.begin();
 
   xh = random(0.0, 20.0);
-
   x0 = random(0.0, 20.0);
   x1 = random(0.0, 20.0);
+  x2 = random(0.0, 20.0);
+  x3 = random(0.0, 20.0);
+  x4 = random(0.0, 20.0);
+  x5 = random(0.0, 20.0);
+  x6 = random(0.0, 20.0);
+  x7 = random(0.0, 20.0);
+  x8 = random(0.0, 20.0);
+  x9 = random(0.0, 20.0);
+  x10 = random(0.0, 20.0);
+  x11 = random(0.0, 20.0);
+  x12 = random(0.0, 20.0);
+  x13 = random(0.0, 20.0);
+  x14 = random(0.0, 20.0);
+  x15 = random(0.0, 20.0);
 
   // Sensor Setup
   // ============
@@ -251,6 +386,9 @@ void loop() {
     delay(500);
     massDetatch();
     return;
+  } else if (incomingByte == 22) {
+    massAttatch();
+    mode = "noise";
   } else if (incomingByte == 49) {
     massAttatch();
     mode = "sweep";
@@ -259,288 +397,383 @@ void loop() {
 //  int ColorFadeIndex = 0;
 //  int Interval = 10;
 //  int TotalSteps = 5;
-  
+
   current_millis = millis();
   int pixels_per_section = NUMPIXELS / OBJECT_NUM;
+
+  // UNO Code
+  // this is for the 4 motors that need to be run off of a UNO
+  // ================================
+  if (arduino == 1){
+    
+    if((current_millis - lastUpdate) > updateInterval)  // time to update
+    {
+      lastUpdate = millis();
   
-  for (uint8_t i = 0; i < OBJECT_NUM; i++) {
-    ping_current_millis = millis();
-
-    // Is it this sensor's time to ping?
-    if (ping_current_millis >= pingTimer[i]) {
-      // Set next time this sensor will be pinged.
-      pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
-      start_sensor();
-      distance[i] = analogRead(sensorPins[i])/2;
-      mappedDistance[i] = map(distance[i], 0, 350, 0, 250);
-
-
-      // this might need to be moved out again
-      for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
-        int pixl = j;
-
-//        color1[pixl][0] = color2[pixl][0];
-//        color1[pixl][1] = color2[pixl][1];
-//        color1[pixl][2] = color2[pixl][2];
-//        ColorFadeIndex = 0;
-
-        if(animate_all_equal == true){
-          Serial.println("===============");
-          strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
-        } else if(animate_hsb_fade == true){
-
-//          int hue = map(mappedDistance[i],0, 250, 0, 359);     // hue is a number between 0 and 360
-//          String returnVal = getRGB(0, 0, brightness);
-//
-//          int commaIndex = returnVal.indexOf('/');
-//          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
-//
-//          String firstValue = returnVal.substring(0, commaIndex);
-//          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
-//          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
-//
-//          int r = firstValue.toInt();
-//          int g = secondValue.toInt();
-//          int b = thirdValue.toInt();
-//          
-//          strip.setPixelColor(pixl, strip.Color(r, g, b));
-
-//          color2[pixl] = {r, g, b};
-//          color2[pixl][0] = r;
-//          color2[pixl][1] = g;
-//          color2[pixl][2] = b;
-
-          
-        } else if(hsb_saturation == true){
-
-//          Serial.print("mappedDistance[i]: ");
-//          Serial.println(mappedDistance[i]);
-          
-          int brightness = map(mappedDistance[i],0, 200, 0, 100);     // hue is a number between 0 and 360
-
-//          Serial.print("brightness: ");
-//          Serial.println(brightness);
-          
-          String returnVal = getRGB(0, 0, brightness);
-
-          int commaIndex = returnVal.indexOf('/');
-          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
-
-          String firstValue = returnVal.substring(0, commaIndex);
-          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
-          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
-
-          int r = firstValue.toInt();
-          int g = secondValue.toInt();
-          int b = thirdValue.toInt();
-          
-          strip.setPixelColor(pixl, strip.Color(r, g, b));
-
-        } else if(animate_hsb == true) {
-          int hue = map(mappedDistance[i],0, 250, 0, 359);     // hue is a number between 0 and 360
-
-          if(animate_sb = true){
-            // saturation is a number between 0 - 255
-
-            nh = snh.noise(xh, y);
-            xh += increase_sb;
-
-            // this works for when it's being used for brightness..
-            // posh = (int)map(nh*100, -100, 100, 0, 255);
-
-            // this works best for saturation
-            posh = (int)map(nh*100, -100, 100, 100, 255);
-      
-            saturation = posh;
-            brightness = 255;
-          } else {
-            // saturation is a number between 0 - 255
-            saturation = 255;
-            brightness = 255;
-          }
-          
-          // This parsing was incluenced by the following post...
-          // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
-          String returnVal = getRGB(hue, saturation, brightness);
-          // Serial.println(returnVal);
-
-          int commaIndex = returnVal.indexOf('/');
-          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
-
-          String firstValue = returnVal.substring(0, commaIndex);
-          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
-          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
-
-          int r = firstValue.toInt();
-          int g = secondValue.toInt();
-          int b = thirdValue.toInt();
-          
-          strip.setPixelColor(pixl, strip.Color(r, g, b));
+      if(animate_noise == false){
+        
+        pos12 += increment;
+        pos13 += increment;
+        pos14 += increment;
+        pos15 += increment;
+        
+        if ((pos12 >= MAX_DEGREE) || (pos12 <= MIN_DEGREE)) // end of sweep
+        {
+          // reverse direction
+          increment = -increment;
         }
+      } else{
+        n12 = sn12.noise(x12, y);
+        n13 = sn13.noise(x13, y);
+        n14 = sn14.noise(x14, y);
+        n15 = sn15.noise(x15, y);
+        x12 += increase;
+        x13 += increase;
+        x14 += increase;
+        x15 += increase;
+  
+        // TODO: turn this into a function
+        pos12 = (int)map(n12*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos13 = (int)map(n13*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos14 = (int)map(n14*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos15 = (int)map(n15*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
 
-        // TODO:
-        // There could be something super cool by randomly selecting what RGB values are static and have one 
-        // rgb value represented by sensors
-        // OR OR OR
-        // could be super cool to have noise values for two of three RGB and one controlled by light
       }
-    
-      strip.show(); // This sends the updated pixel color to the hardware.
+    }
+  
+    servo12.write(pos12);
+    servo13.write(pos13);
+    servo14.write(pos14);
+    servo15.write(pos15);
+  
+  } else {
   
 
-
-
-    /// ======== end
-//    } else{
-      // This is where the fading happens
-//      if(animate_hsb_fade == true){
-//
-//        Serial.print("animate_hsb_fade");
-//        
-//        for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
-//          int pixl = j;
-//
-//            if((current_millis - lastUpdateFade) > Interval) // time to update
-//              lastUpdateFade = millis();
-//              
-//              uint8_t red = ((color1[pixl][0]) * (TotalSteps - ColorFadeIndex)) + (color2[pixl][0] * ColorFadeIndex) / TotalSteps;
-//
-//              Serial.print("red: ");
-//              Serial.println(red);
-//              
-////              uint8_t red = ((Red(Color1) * (TotalSteps - Index)) + (Red(Color2) * Index)) / TotalSteps;
-////              uint8_t green = ((Green(Color1) * (TotalSteps - Index)) + (Green(Color2) * Index)) / TotalSteps;
-////              uint8_t blue = ((Blue(Color1) * (TotalSteps - Index)) + (Blue(Color2) * Index)) / TotalSteps;
-//
-//              //strip.setPixelColor(pixl, strip.Color(r, g, b));
-//
-//              ColorFadeIndex++;
-//
-//          
-//        }
-//        
-//      } 
+    // MEGA Code block
+    // this is for the maga, not the UNO
+    // ===========
+    for (uint8_t i = 0; i < OBJECT_NUM; i++) {
+      ping_current_millis = millis();
+  
+      // Is it this sensor's time to ping?
+      if (ping_current_millis >= pingTimer[i]) {
+        // Set next time this sensor will be pinged.
+        pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
+        start_sensor();
+        distance[i] = analogRead(sensorPins[i])/2;
+        mappedDistance[i] = map(distance[i], 0, 350, 0, 250);
+  
+        
+        Serial.println(pos1);
+  
+  //      if(ping_current_millis % 100 == 0){
+        if(pos1 % 10 == 0){
+          
+          // this might need to be moved out again
+          for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
+            int pixl = j;
+    
+    //        color1[pixl][0] = color2[pixl][0];
+    //        color1[pixl][1] = color2[pixl][1];
+    //        color1[pixl][2] = color2[pixl][2];
+    //        ColorFadeIndex = 0;
+    
+            if(animate_all_equal == true){
+              Serial.println("===============");
+              strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+            } else if(animate_hsb_fade == true){
+    
+    //          int hue = map(mappedDistance[i],0, 250, 0, 359);     // hue is a number between 0 and 360
+    //          String returnVal = getRGB(0, 0, brightness);
+    //
+    //          int commaIndex = returnVal.indexOf('/');
+    //          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+    //
+    //          String firstValue = returnVal.substring(0, commaIndex);
+    //          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+    //          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+    //
+    //          int r = firstValue.toInt();
+    //          int g = secondValue.toInt();
+    //          int b = thirdValue.toInt();
+    //          
+    //          strip.setPixelColor(pixl, strip.Color(r, g, b));
+    
+    //          color2[pixl] = {r, g, b};
+    //          color2[pixl][0] = r;
+    //          color2[pixl][1] = g;
+    //          color2[pixl][2] = b;
+    
+              
+            } else if(hsb_saturation == true){
+    
+    //          Serial.print("mappedDistance[i]: ");
+    //          Serial.println(mappedDistance[i]);
+              
+              int brightness = map(mappedDistance[i],0, 200, 0, 100);     // hue is a number between 0 and 360
+    
+    //          Serial.print("brightness: ");
+    //          Serial.println(brightness);
+              
+              String returnVal = getRGB(0, 0, brightness);
+    
+              int commaIndex = returnVal.indexOf('/');
+              int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+    
+              String firstValue = returnVal.substring(0, commaIndex);
+              String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+              String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+    
+              int r = firstValue.toInt();
+              int g = secondValue.toInt();
+              int b = thirdValue.toInt();
+              
+              strip.setPixelColor(pixl, strip.Color(r, g, b));
+    
+            } else if(animate_hsb == true) {
+              int hue = map(mappedDistance[i],0, 250, 0, 359);     // hue is a number between 0 and 360
+    
+              if(animate_sb = true){
+                // saturation is a number between 0 - 255
+    
+                nh = snh.noise(xh, y);
+                xh += increase_sb;
+    
+                // this works for when it's being used for brightness..
+                // posh = (int)map(nh*100, -100, 100, 0, 255);
+    
+                // this works best for saturation
+                posh = (int)map(nh*100, -100, 100, 100, 255);
+          
+                saturation = posh;
+                brightness = 255;
+              } else {
+                // saturation is a number between 0 - 255
+                saturation = 255;
+                brightness = 255;
+              }
+              
+              // This parsing was incluenced by the following post...
+              // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
+              String returnVal = getRGB(hue, saturation, brightness);
+              // Serial.println(returnVal);
+    
+              int commaIndex = returnVal.indexOf('/');
+              int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+    
+              String firstValue = returnVal.substring(0, commaIndex);
+              String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+              String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+    
+              int r = firstValue.toInt();
+              int g = secondValue.toInt();
+              int b = thirdValue.toInt();
+              
+              strip.setPixelColor(pixl, strip.Color(r, g, b));
+            }
+    
+            // TODO:
+            // There could be something super cool by randomly selecting what RGB values are static and have one 
+            // rgb value represented by sensors
+            // OR OR OR
+            // could be super cool to have noise values for two of three RGB and one controlled by light
+          }
+        
+          strip.show(); // This sends the updated pixel color to the hardware.
+    
+        }
+  
+  
+      /// ======== end
+  //    } else{
+        // This is where the fading happens
+  //      if(animate_hsb_fade == true){
+  //
+  //        Serial.print("animate_hsb_fade");
+  //        
+  //        for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
+  //          int pixl = j;
+  //
+  //            if((current_millis - lastUpdateFade) > Interval) // time to update
+  //              lastUpdateFade = millis();
+  //              
+  //              uint8_t red = ((color1[pixl][0]) * (TotalSteps - ColorFadeIndex)) + (color2[pixl][0] * ColorFadeIndex) / TotalSteps;
+  //
+  //              Serial.print("red: ");
+  //              Serial.println(red);
+  //              
+  ////              uint8_t red = ((Red(Color1) * (TotalSteps - Index)) + (Red(Color2) * Index)) / TotalSteps;
+  ////              uint8_t green = ((Green(Color1) * (TotalSteps - Index)) + (Green(Color2) * Index)) / TotalSteps;
+  ////              uint8_t blue = ((Blue(Color1) * (TotalSteps - Index)) + (Blue(Color2) * Index)) / TotalSteps;
+  //
+  //              //strip.setPixelColor(pixl, strip.Color(r, g, b));
+  //
+  //              ColorFadeIndex++;
+  //
+  //          
+  //        }
+  //        
+  //      } 
+        
+      }
       
     }
-    
-  }
-
-//  if(pos % 10 == 0){
-    
-//    int pixels_per_section = NUMPIXELS / OBJECT_NUM;
-//    
-//    for(int i=0; i<OBJECT_NUM;i++){
-//
-//      for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
-//        int pixl = j;
-//
-//        if(animate_hsb == false){
-//          strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
-//        } else if(animate_hsb_fade == true){
-//
-//
-//          
-//        } else if(hsb_saturation == true){
-//          
-//        } else {
-//          int hue = map(mappedDistance[i],0, 400,0, 359);     // hue is a number between 0 and 360
-//
-//          if(animate_sb = true){
-//            // saturation is a number between 0 - 255
-//
-//            nh = snh.noise(xh, y);
-//            xh += increase_sb;
-//
-//            // this works for when it's being used for brightness..
-//            // posh = (int)map(nh*100, -100, 100, 0, 255);
-//
-//            // this works best for saturation
-//            posh = (int)map(nh*100, -100, 100, 100, 255);
-//      
-//            saturation = posh;
-//            brightness = 255;
-//          } else {
-//            // saturation is a number between 0 - 255
-//            saturation = 255;
-//            brightness = 255;
-//          }
-//          
-//
-//          // This parsing was incluenced by the following post...
-//          // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
-//          String returnVal = getRGB(hue, saturation, brightness);
-//          // Serial.println(returnVal);
-//
-//          int commaIndex = returnVal.indexOf('/');
-//          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
-//
-//          String firstValue = returnVal.substring(0, commaIndex);
-//          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
-//          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
-//
-//          int r = firstValue.toInt();
-//          int g = secondValue.toInt();
-//          int b = thirdValue.toInt();
-//          
-//          strip.setPixelColor(pixl, strip.Color(r, g, b));
-//        }
-//
-//        // TODO:
-//        // There could be something super cool by randomly selecting what RGB values are static and have one 
-//        // rgb value represented by sensors
-//        // OR OR OR
-//        // could be super cool to have noise values for two of three RGB and one controlled by light
-//      }
-//    }
-//  
-//    strip.show(); // This sends the updated pixel color to the hardware.
-//  }
   
-  if((current_millis - lastUpdate) > updateInterval)  // time to update
-  {
-    lastUpdate = millis();
-
+  //  if(pos % 10 == 0){
+      
+  //    int pixels_per_section = NUMPIXELS / OBJECT_NUM;
+  //    
+  //    for(int i=0; i<OBJECT_NUM;i++){
+  //
+  //      for(int j = 0 + (pixels_per_section*i); j<pixels_per_section + (pixels_per_section*i); j++){
+  //        int pixl = j;
+  //
+  //        if(animate_hsb == false){
+  //          strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+  //        } else if(animate_hsb_fade == true){
+  //
+  //
+  //          
+  //        } else if(hsb_saturation == true){
+  //          
+  //        } else {
+  //          int hue = map(mappedDistance[i],0, 400,0, 359);     // hue is a number between 0 and 360
+  //
+  //          if(animate_sb = true){
+  //            // saturation is a number between 0 - 255
+  //
+  //            nh = snh.noise(xh, y);
+  //            xh += increase_sb;
+  //
+  //            // this works for when it's being used for brightness..
+  //            // posh = (int)map(nh*100, -100, 100, 0, 255);
+  //
+  //            // this works best for saturation
+  //            posh = (int)map(nh*100, -100, 100, 100, 255);
+  //      
+  //            saturation = posh;
+  //            brightness = 255;
+  //          } else {
+  //            // saturation is a number between 0 - 255
+  //            saturation = 255;
+  //            brightness = 255;
+  //          }
+  //          
+  //
+  //          // This parsing was incluenced by the following post...
+  //          // https://stackoverflow.com/questions/11068450/arduino-c-language-parsing-string-with-delimiter-input-through-serial-interfa
+  //          String returnVal = getRGB(hue, saturation, brightness);
+  //          // Serial.println(returnVal);
+  //
+  //          int commaIndex = returnVal.indexOf('/');
+  //          int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+  //
+  //          String firstValue = returnVal.substring(0, commaIndex);
+  //          String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+  //          String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+  //
+  //          int r = firstValue.toInt();
+  //          int g = secondValue.toInt();
+  //          int b = thirdValue.toInt();
+  //          
+  //          strip.setPixelColor(pixl, strip.Color(r, g, b));
+  //        }
+  //
+  //        // TODO:
+  //        // There could be something super cool by randomly selecting what RGB values are static and have one 
+  //        // rgb value represented by sensors
+  //        // OR OR OR
+  //        // could be super cool to have noise values for two of three RGB and one controlled by light
+  //      }
+  //    }
+  //  
+  //    strip.show(); // This sends the updated pixel color to the hardware.
+  //  }
+    
+    if((current_millis - lastUpdate) > updateInterval)  // time to update
+    {
+      lastUpdate = millis();
+  
+      if(animate_noise == false){
+        pos += increment;
+        
+        if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
+        {
+          // reverse direction
+          increment = -increment;
+        }
+      } else{
+        n0 = sn0.noise(x0, y);
+        n1 = sn1.noise(x1, y);
+        x0 += increase;
+        x1 += increase;
+  
+        // TODO: turn this into a function
+        pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+  
+        servo0.write(pos0);
+        servo1.write(pos1);
+      }
+    }
+  
     if(animate_noise == false){
-      pos += increment;
-      
-      if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
-      {
-        // reverse direction
-        increment = -increment;
-      }
-    } else{
-      n0 = sn0.noise(x0, y);
-      n1 = sn1.noise(x1, y);
-      x0 += increase;
-      x1 += increase;
-
-      // TODO: turn this into a function
-      pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
-      pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
-
-      servo0.write(pos0);
-      servo1.write(pos1);
+      servo0.write(pos);
+      servo1.write(pos);
     }
   }
-
-  if(animate_noise == false){
-    servo0.write(pos);
-    servo1.write(pos);
-  }
-
+  
   delay(2);
   
 }
 
 void massAttatch() {
+  
   // servo.attach(SERVO_PIN, SERVO_MIN, SERVO_MAX);
-  servo0.attach(SERVO_PIN0);  // attaches the servo on pin 9 to the servo object
-  servo1.attach(SERVO_PIN1);  // attaches the servo on pin 9 to the servo object
+  if(arduino == 0){
+    servo0.attach(SERVO_PIN0);  // attaches the servo on pin 9 to the servo object
+    servo1.attach(SERVO_PIN1);  // attaches the servo on pin 9 to the servo object
+    servo2.attach(SERVO_PIN2);
+    servo3.attach(SERVO_PIN3);
+    servo4.attach(SERVO_PIN4);
+    servo5.attach(SERVO_PIN5);
+    servo6.attach(SERVO_PIN6);
+    servo7.attach(SERVO_PIN7);
+    servo8.attach(SERVO_PIN8);
+    servo9.attach(SERVO_PIN9);
+    servo10.attach(SERVO_PIN10);
+    servo11.attach(SERVO_PIN11);
+  } else if(arduino == 1){
+
+    
+    
+    servo12.attach(SERVO_PIN12);
+    servo13.attach(SERVO_PIN13);
+    servo14.attach(SERVO_PIN14);
+    servo15.attach(SERVO_PIN15);
+  } 
 }
 
 void massDetatch() {
-  servo0.detach();
-  servo1.detach();
+  if(arduino == 0){
+    servo0.detach();
+    servo1.detach();
+    servo2.detach();
+    servo3.detach();
+    servo4.detach();
+    servo5.detach();
+    servo6.detach();
+    servo7.detach();
+    servo8.detach();
+    servo9.detach();
+    servo10.detach();
+    servo11.detach();
+  } else if(arduino == 1){
+    servo12.detach();
+    servo13.detach();
+    servo14.detach();
+    servo15.detach();
+  } 
 }
 
 // Debugging
