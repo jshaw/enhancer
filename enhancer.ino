@@ -159,6 +159,7 @@ SimplexNoise sn15;
 //SimplexNoise sn[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 double n0;
 double n1;
+double n2;
 double n3;
 double n4;
 double n5;
@@ -368,6 +369,20 @@ void loop() {
     pos = 90;
     servo0.write(pos);
     servo1.write(pos);
+    servo2.write(pos);
+    servo3.write(pos);
+    servo4.write(pos);
+    servo5.write(pos);
+    servo6.write(pos);
+    servo7.write(pos);
+    servo8.write(pos);
+    servo9.write(pos);
+    servo10.write(pos);
+    servo11.write(pos);
+    servo12.write(pos);
+    servo13.write(pos);
+    servo14.write(pos);
+    servo15.write(pos);
     delay(500);
     massDetatch();
     return;
@@ -581,22 +596,74 @@ void loop() {
       } else{
         n0 = sn0.noise(x0, y);
         n1 = sn1.noise(x1, y);
+        n2 = sn2.noise(x2, y);
+        n3 = sn3.noise(x3, y);
+        n4 = sn4.noise(x4, y);
+        n5 = sn5.noise(x5, y);
+        n6 = sn6.noise(x6, y);
+        n7 = sn7.noise(x7, y);
+        n8 = sn8.noise(x8, y);
+        n9 = sn9.noise(x9, y);
+        n10 = sn10.noise(x10, y);
+        n11 = sn11.noise(x11, y);
+        n12 = sn12.noise(x12, y);
+        n13 = sn13.noise(x13, y);
+        n14 = sn14.noise(x14, y);
+        n15 = sn15.noise(x15, y);
+        
         x0 += increase;
         x1 += increase;
+        x2 += increase;
+        x3 += increase;
+        x4 += increase;
+        x5 += increase;
+        x6 += increase;
+        x7 += increase;
+        x8 += increase;
+        x9 += increase;
+        x10 += increase;
+        x11 += increase;
+        x12 += increase;
+        x13 += increase;
+        x14 += increase;
+        x15 += increase;
   
         // TODO: turn this into a function
         pos0 = (int)map(n0*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
         pos1 = (int)map(n1*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
-  
-        servo0.write(pos0);
-        servo1.write(pos1);
+        pos2 = (int)map(n2*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos3 = (int)map(n3*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos4 = (int)map(n4*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos5 = (int)map(n5*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos6 = (int)map(n6*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos7 = (int)map(n7*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos8 = (int)map(n8*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos9 = (int)map(n9*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos10 = (int)map(n10*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos11 = (int)map(n11*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos12 = (int)map(n12*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos13 = (int)map(n13*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos14 = (int)map(n14*100, -100, 100, MIN_DEGREE, MAX_DEGREE);
+        pos15 = (int)map(n15*100, -100, 100, MIN_DEGREE, MAX_DEGREE);  
       }
     }
-  
-    if(animate_noise == false){
-      servo0.write(pos);
-      servo1.write(pos);
-    }
+ 
+    servo0.write(pos0);
+    servo1.write(pos1);
+    servo2.write(pos2);
+    servo3.write(pos3);
+    servo4.write(pos4);
+    servo5.write(pos5);
+    servo6.write(pos6);
+    servo7.write(pos7);
+    servo8.write(pos8);
+    servo9.write(pos9);
+    servo10.write(pos10);
+    servo11.write(pos11);
+    servo12.write(pos12);
+    servo13.write(pos13);
+    servo14.write(pos14);
+    servo15.write(pos15);
   }
   
   delay(2);
