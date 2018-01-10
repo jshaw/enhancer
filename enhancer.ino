@@ -506,7 +506,7 @@ void loop() {
         String tmp_string = (String)i_temp;
         String tmp_motor_pos = "pos";
         
-        StoreData(i_temp, currentDistance);
+        StoreData(i_temp, distance[i]);
 
         Serial.println(pos1);
         if(pos1 % 10 == 0){
