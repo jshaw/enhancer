@@ -260,7 +260,6 @@ boolean printStringTitle = false;
 // =============
 
 
->>>>>>> e62ac7512fa69b84c7fe3d040dd8cd322f1b3f8d
 void setup(void) {
   Serial.begin(115200);  // sets the serial port to 9600
   while (!Serial) {
