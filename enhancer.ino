@@ -120,6 +120,11 @@ int readIndex[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 //int total = 0;
 // the average
 //int average = 0;
+
+String sweepString[16] = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+int pingTotalCount[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+unsigned long pingRemainderValue = 10;
+
 // END ===========================
 
 // Holds the times when the next ping should happen for each sensor.
@@ -246,6 +251,18 @@ boolean paused = false;
 String mode = "stop";
 // defaults to stop
 int incomingByte = 115;
+
+// Publishing to Pi vars
+// =============
+// these two vars are pure debug variels to control what gets sent over serial or doesn't
+// Help for debugging buffer limit
+boolean printJSON = true;
+//boolean publish_data = false;
+boolean sendJSON = true;
+boolean storeDataJSON = true;
+boolean printStringTitle = false;
+// =============
+
 
 void setup(void) {
   Serial.begin(115200);  // sets the serial port to 9600
@@ -483,11 +500,15 @@ void loop() {
     
         // calculate the average:
         average[i] = total[i] / numReadings;
-  
+
+        // save teh motor position and distance
+
+        String tmp_string = (String)i_temp;
+        String tmp_motor_pos = "pos";
         
+        StoreData(i_temp, currentDistance);
+
         Serial.println(pos1);
-  
-  //      if(ping_current_millis % 100 == 0){
         if(pos1 % 10 == 0){
           
           // this might need to be moved out again
@@ -660,13 +681,120 @@ void loop() {
     servo9.write(pos9);
     servo10.write(pos10);
     servo11.write(pos11);
-    servo12.write(pos12);
-    servo13.write(pos13);
-    servo14.write(pos14);
-    servo15.write(pos15);
+
+    // Servo Note
+    // We don't want to write these servos because they are not attached in the "arduino 0" board
+    // This is being controlled by "arduino 1" 
   }
   
   delay(2);
+  
+}
+
+void StoreData(int id, int currentDistance)
+{
+  // Just some debugging here
+//  if(printStringTitle == true){
+//    if(String(currentDistance).length() > 0){
+//      Serial.print("currentDistance: ");
+//      Serial.print((String)currentDistance);
+//      Serial.print(" ||||");
+//      Serial.println(" ");
+//    }
+//  }
+
+  if(String(currentDistance).length() > 0){
+    if(paused == false){
+      // updated April 4...
+      // added panel ID into the string. This will allow to isolate where
+      // the data is coming from.... as in what panel, which will help to plot
+      // it in the display
+//          String tmp = String(panel);
+//          tmp.concat("_");
+//          tmp.concat(String(id));
+
+
+      String tmp = String(id);
+      tmp.concat(":");
+      
+      if(id == 0){
+        tmp.concat(String(pos0));
+      } else if(id == 1){
+        tmp.concat(String(pos1));
+      } else if(id == 2){
+        tmp.concat(String(pos2));
+      } else if(id == 3){
+        tmp.concat(String(pos3));
+      } else if(id == 4){
+        tmp.concat(String(pos4));
+      } else if(id == 5){
+        tmp.concat(String(pos5));
+      } else if(id == 6){
+        tmp.concat(String(pos6));
+      } else if(id == 7){
+        tmp.concat(String(pos7));
+      } else if(id == 8){
+        tmp.concat(String(pos8));
+      } else if(id == 9){
+        tmp.concat(String(pos9));
+      } else if(id == 10){
+        tmp.concat(String(pos10));
+      } else if(id == 11){
+        tmp.concat(String(pos11));
+      } else if(id == 12){
+        tmp.concat(String(pos12));
+      } else if(id == 13){
+        tmp.concat(String(pos13));
+      } else if(id == 14){
+        tmp.concat(String(pos14));
+      } else if(id == 15){
+        tmp.concat(String(pos15));
+      }
+
+      tmp.concat(":");
+      tmp.concat(String(currentDistance));
+        
+      sweepString[id].concat(tmp);
+      sweepString[id].concat("/");
+      
+      pingTotalCount[id]++;
+
+      if(pingTotalCount[id] >= pingRemainderValue){
+        SendBatchData(id);
+        pingTotalCount[id] = 1;
+        
+      }
+    }
+  }
+}
+
+void SendBatchData(int id) {
+  // helping debug the serial buffer issue
+  if(sendJSON == true){
+      if(sweepString[id].endsWith("/")){
+        int char_index = sweepString[id].lastIndexOf("/");
+        sweepString[id].remove(char_index);
+      }
+
+      String addPannelToPublish = String(arduino);
+      addPannelToPublish.concat("_");
+      addPannelToPublish.concat(sweepString[id]);
+
+      // REMEMBER: THIS IS THE SEND BATCH SERIAL PRINT!!
+//          Serial.println(sweepString);
+      Serial.println(addPannelToPublish);
+
+      ResetPublishDataStatus();
+  }
+}
+
+void ResetPublishDataStatus()
+{
+
+  for (uint8_t i = 0; i < OBJECT_NUM; i++) {
+    int tmp = (int)i;
+    sweepString[tmp ] = "";
+  }
   
 }
 
