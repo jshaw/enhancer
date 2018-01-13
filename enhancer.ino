@@ -71,8 +71,8 @@ Adafruit_NeoPixel  strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
 #define SERVO_MIN 1000 // 1 ms pulse
 #define SERVO_MAX 2000 // 2 ms pulse
 
-#define MIN_DEGREE    40
-#define MAX_DEGREE    120
+#define MIN_DEGREE    55
+#define MAX_DEGREE    125
 
 Adafruit_TiCoServo servo0;
 Adafruit_TiCoServo servo1;
@@ -357,16 +357,22 @@ void loop() {
   // Next
   // n = 110
 
-  // Previous
-  // p = 112
+  // sweep
+  // noise
+  // rainbow pause
 
-  // Configure
-  // c = 99
+
 
   // Mode Controles + hex values
   // 1 = Sweep / 49
   // 4 = noise / 52
   // 8 = rainbow/paused 56 
+
+  // this isn't 
+  // Previous
+  // p = 112
+  // Configure
+  // c = 99
 
   // END OF CODES
   // ==================
@@ -602,6 +608,22 @@ void loop() {
   
       if(animate_noise == false){
         pos += increment;
+        pos0 += increment;
+        pos1 += increment;
+        pos2 += increment;
+        pos3 += increment;
+        pos4 += increment;
+        pos5 += increment;
+        pos6 += increment;
+        pos7 += increment;
+        pos8 += increment;
+        pos9 += increment;
+        pos10 += increment;
+        pos11 += increment;
+        pos12 += increment;
+        pos13 += increment;
+        pos14 += increment;
+        pos15 += increment;
         
         if ((pos >= MAX_DEGREE) || (pos <= MIN_DEGREE)) // end of sweep
         {
