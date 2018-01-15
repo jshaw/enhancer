@@ -27,7 +27,7 @@ Mode and Median filters are recommended.
 
 // General Define
 // =======
-#define OBJECT_NUM  2
+#define OBJECT_NUM  16
 
 // EEPRAM PANEL SOLUTION
 // 0 = Mega
@@ -45,8 +45,8 @@ byte a1;
 
 // NeoPixel parameters. These are configurable, but the pin number must
 // be different than the servo(s).
-#define NUMPIXELS          60
-#define LED_PIN            13
+#define NUMPIXELS          180
+#define LED_PIN            9
 Adafruit_NeoPixel  strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
 
 // SERVOS
@@ -93,13 +93,16 @@ Adafruit_TiCoServo servo15;
 
 // ULTRASONIC
 // =========
+#define NUM_SENSORS 16
 #define SONAR_TIGGER_PIN   37
 // Maximum distance (in cm) to ping
 #define MAX_DISTANCE 400
 // Milliseconds between sensor pings (29ms is about the min to avoid cross-sensor echo).
 #define PING_INTERVAL 50
 
-int sensorPins[16] = {A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10, A11, A12, A13, A14, A15};
+
+// because of wiring, motor 0 index #10, labelled #11 is switched with last sensor
+int sensorPins[16] = {A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A15, A11, A12, A13, A14, A10};
 int distance[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 int mappedDistance[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -473,13 +476,16 @@ void loop() {
     // MEGA Code block
     // this is for the maga, not the UNO
     // ===========
-    for (uint8_t i = 0; i < OBJECT_NUM; i++) {
+    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
       ping_current_millis = millis();
   
       // Is it this sensor's time to ping?
       if (ping_current_millis >= pingTimer[i]) {
 
         int i_temp = (int)i;
+
+//        Serial.print("i_temp: ");
+//        Serial.println(i_temp);
         
         // Set next time this sensor will be pinged.
         pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
@@ -508,7 +514,7 @@ void loop() {
         
         StoreData(i_temp, distance[i]);
 
-        Serial.println(pos1);
+//        Serial.println(pos1);
         if(pos1 % 10 == 0){
           
           // this might need to be moved out again
@@ -516,7 +522,7 @@ void loop() {
             int pixl = j;
     
             if(animate_all_equal == true){
-              Serial.println("===============");
+//              Serial.println("===============");
 //              strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
                 strip.setPixelColor(pixl, strip.Color(average[i], average[i], average[i]));
             } else if(animate_hsb_fade == true){  
@@ -777,7 +783,7 @@ void StoreData(int id, int currentDistance)
 
       if(pingTotalCount[id] >= pingRemainderValue){
         SendBatchData(id);
-        pingTotalCount[id] = 1;
+        pingTotalCount[id] = 0;
         
       }
     }
@@ -798,9 +804,15 @@ void SendBatchData(int id) {
 
       // REMEMBER: THIS IS THE SEND BATCH SERIAL PRINT!!
 //          Serial.println(sweepString);
-      Serial.println(addPannelToPublish);
 
-      ResetPublishDataStatus();
+//      Serial.println("_________________________");
+//      Serial.println(addPannelToPublish.length());
+//      Serial.println("+++++++++++++++++++++++++");
+
+      if((int)addPannelToPublish.length() > (int)4){
+        Serial.println(addPannelToPublish);
+        ResetPublishDataStatus();
+      }
   }
 }
 
