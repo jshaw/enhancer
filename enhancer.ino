@@ -47,7 +47,7 @@ byte a1;
 // be different than the servo(s).
 #define NUMPIXELS          180
 #define LED_PIN            9
-Adafruit_NeoPixel  strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
 
 // SERVOS
 // =========
@@ -111,7 +111,7 @@ int mappedDistance[16]= {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 // ===========
 // this section is for interaction smoothing
 //===========================
-static const int numReadings = 5;
+static const int numReadings = 3;
 // the readings from the analog input
 int readings[16][numReadings];
 int total[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -224,7 +224,8 @@ int pos15 = 90;
 int pos = 90;    // variable to store the servo position
 unsigned long current_millis = 0;
 unsigned long lastUpdate; // last update of position
-int  updateInterval = 18;      // interval between updates
+//int  updateInterval = 18;      // interval between updates
+int  updateInterval = 25;      // interval between updates
 int increment = 1;
 
 // Specific vars
@@ -234,12 +235,13 @@ unsigned long ping_current_millis;
 bool animate_all_equal = false;
 
 // these go together
-bool animate_hsb = true;
-bool animate_sb = true; 
+bool animate_hsb = false;
+bool animate_sb = false; 
 
 bool animate_noise = true;
-bool animate_hsb_fade = false;
 bool hsb_saturation = false;
+
+bool noise_hue = true;
 
 // TODO
 // BREAK mode
@@ -364,8 +366,6 @@ void loop() {
   // noise
   // rainbow pause
 
-
-
   // Mode Controles + hex values
   // 1 = Sweep / 49
   // 4 = noise / 52
@@ -383,7 +383,8 @@ void loop() {
   if (incomingByte == 103) {
     massAttatch();
     mode = "sweep";
-  // STOP movement
+    // STOP movement
+    // But have some nice visuals
   } else if (incomingByte == 115) {
     mode = "stop";
     pos = 90;
@@ -405,6 +406,9 @@ void loop() {
     servo15.write(pos);
     delay(500);
     massDetatch();
+
+    rainbowCycle(20);
+    
     return;
   } else if (incomingByte == 22) {
     massAttatch();
@@ -413,10 +417,6 @@ void loop() {
     massAttatch();
     mode = "sweep";
   }
-
-//  int ColorFadeIndex = 0;
-//  int Interval = 10;
-//  int TotalSteps = 5;
 
   current_millis = millis();
   int pixels_per_section = NUMPIXELS / OBJECT_NUM;
@@ -483,9 +483,6 @@ void loop() {
       if (ping_current_millis >= pingTimer[i]) {
 
         int i_temp = (int)i;
-
-//        Serial.print("i_temp: ");
-//        Serial.println(i_temp);
         
         // Set next time this sensor will be pinged.
         pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
@@ -507,14 +504,15 @@ void loop() {
         // calculate the average:
         average[i] = total[i] / numReadings;
 
+//        printDistances(i);
+        
         // save teh motor position and distance
-
         String tmp_string = (String)i_temp;
         String tmp_motor_pos = "pos";
         
         StoreData(i_temp, distance[i]);
 
-//        Serial.println(pos1);
+        // Serial.println(pos1);
         if(pos1 % 10 == 0){
           
           // this might need to be moved out again
@@ -522,17 +520,14 @@ void loop() {
             int pixl = j;
     
             if(animate_all_equal == true){
-//              Serial.println("===============");
-//              strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
-                strip.setPixelColor(pixl, strip.Color(average[i], average[i], average[i]));
-            } else if(animate_hsb_fade == true){  
-              
+              //NOTE: this works better then the averaging
+              strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+              // strip.setPixelColor(pixl, strip.Color(average[i], average[i], average[i]));
             } else if(hsb_saturation == true){
                  
-//              int brightness = map(mappedDistance[i],0, 200, 0, 100);     // hue is a number between 0 and 360
-              int brightness = map(average[i],0, 200, 0, 100);     // hue is a number between 0 and 360
-              
-              
+              // int brightness = map(mappedDistance[i],0, 200, 0, 100);     // hue is a number between 0 and 360
+              // hue is a number between 0 and 360
+              int brightness = map(average[i],0, 200, 0, 100);
               String returnVal = getRGB(0, 0, brightness);
     
               int commaIndex = returnVal.indexOf('/');
@@ -549,8 +544,9 @@ void loop() {
               strip.setPixelColor(pixl, strip.Color(r, g, b));
     
             } else if(animate_hsb == true) {
-//              int hue = map(mappedDistance[i],0, 250, 0, 359);     // hue is a number between 0 and 360
-              int hue = map(average[i],0, 250, 0, 359);     // hue is a number between 0 and 360
+              // hue is a number between 0 and 360
+              // int hue = map(mappedDistance[i],0, 250, 0, 359);
+              int hue = map(average[i],0, 250, 0, 359);     
     
               if(animate_sb = true){
                 // saturation is a number between 0 - 255
@@ -589,13 +585,36 @@ void loop() {
               int b = thirdValue.toInt();
               
               strip.setPixelColor(pixl, strip.Color(r, g, b));
-            }
+            } else if (noise_hue == true){
+              
+              // could be super cool to have noise values for two of three RGB and one controlled by light
+              nh = snh.noise(xh, y);
+              xh += increase_sb;
     
-            // TODO:
-            // There could be something super cool by randomly selecting what RGB values are static and have one 
-            // rgb value represented by sensors
-            // OR OR OR
-            // could be super cool to have noise values for two of three RGB and one controlled by light
+              // this works best for saturation
+              posh = (int)map(nh*100, -100, 100, 0, 360);
+              int mapped_sensor_reading = (int)map(average[i], 0, 400, 100, 255);
+
+              // brightness = 255;
+              
+              String returnVal = getRGB(posh, mapped_sensor_reading, map(posh, 0, 360, 150, 255));
+              // String returnVal = getRGB(posh, average[i], map(posh, 0, 360, 150, 255));
+              
+              int commaIndex = returnVal.indexOf('/');
+              int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+    
+              String firstValue = returnVal.substring(0, commaIndex);
+              String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+              String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+    
+              int r = firstValue.toInt();
+              int g = secondValue.toInt();
+              int b = thirdValue.toInt();
+                                          
+              strip.setPixelColor(pixl, strip.Color(r, g, b));  
+            
+            }
+   
           }
         
           strip.show(); // This sends the updated pixel color to the hardware.
@@ -711,6 +730,19 @@ void loop() {
   
   delay(2);
   
+}
+
+void printDistances(int i){
+  Serial.print(i);
+  Serial.print(" ");
+  Serial.print(mappedDistance[i]);
+  Serial.print(" ");
+  Serial.print("in");
+  Serial.print(" ");
+  Serial.print(average[i]);
+  Serial.print(" ");
+  Serial.print("in");
+  Serial.println("");
 }
 
 void StoreData(int id, int currentDistance)
@@ -843,9 +875,6 @@ void massAttatch() {
     servo10.attach(SERVO_PIN10);
     servo11.attach(SERVO_PIN11);
   } else if(arduino == 1){
-
-    
-    
     servo12.attach(SERVO_PIN12);
     servo13.attach(SERVO_PIN13);
     servo14.attach(SERVO_PIN14);
@@ -893,6 +922,19 @@ void start_sensor(){
   digitalWrite(SONAR_TIGGER_PIN, HIGH);
   delay(1);
   digitalWrite(SONAR_TIGGER_PIN, LOW);
+}
+
+void rainbowCycle(uint8_t wait) {
+  uint16_t i, j;
+
+//  for(j=0; j<256*5; j++) { // 5 cycles of all colors on wheel
+  for(j=0; j<256; j++) { // 5 cycles of all colors on wheel
+    for(i=0; i< strip.numPixels(); i++) {
+      strip.setPixelColor(i, Wheel(((i * 256 / strip.numPixels()) + j) & 255));
+    }
+    strip.show();
+    delay(wait);
+  }
 }
 
 // Input a value 0 to 255 to get a color value.
