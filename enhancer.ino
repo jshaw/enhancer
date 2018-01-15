@@ -379,6 +379,7 @@ void loop() {
   // 4 = noise / 52
   // 8 = rainbow/paused 56 
 
+  // 0 = stop rainbow / 48
   // 1 = all_same_sweep / 49
   // 2 = all_same_noise / 50
   // 3 = hsb_saturation_sweep / 51
@@ -436,6 +437,13 @@ void loop() {
     rainbowCycle(20);
     
     return;
+  } else if (incomingByte == 48) {
+    // stop rainbow
+    mode = "stop_rainbow";
+    massDetatch();
+    rainbowCycle(20);
+    return;
+    
   } else if (incomingByte == 49) {
     massAttatch();
     mode = "all_same_sweep";
@@ -562,6 +570,8 @@ void loop() {
       new_color = false;
     }
     
+  } else{
+    rainbowCycle(20);
   }
 
   current_millis = millis();
