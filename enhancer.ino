@@ -232,16 +232,22 @@ int increment = 1;
 // ================
 unsigned long ping_current_millis;
 
+// controls whether motors use noise animation
+bool animate_noise = true;
+
 bool animate_all_equal = false;
 
 // these go together
 bool animate_hsb = false;
 bool animate_sb = false; 
 
-bool animate_noise = true;
 bool hsb_saturation = false;
-
 bool noise_hue = true;
+
+bool random_hue_noise_saturation = false;
+
+bool new_color = true;
+int random_color = random(15, 340);
 
 // TODO
 // BREAK mode
@@ -293,6 +299,8 @@ void setup(void) {
   }
 
   massAttatch();
+  
+  generateRandomColor();
   
   strip.begin();
   xh = random(0.0, 20.0);
@@ -371,21 +379,39 @@ void loop() {
   // 4 = noise / 52
   // 8 = rainbow/paused 56 
 
-  // this isn't 
-  // Previous
-  // p = 112
-  // Configure
-  // c = 99
+  // 1 = all_same_sweep / 49
+  // 2 = all_same_noise / 50
+  // 3 = hsb_saturation_sweep / 51
+  // 4 = hsb_saturation_noise / 52
+  // 5 = animate_hsb_sweep / 53
+  // 6 = animate_hsb_noise / 54
+  // 7 = hue_noise_sweep / 55
+  // 8 = hue_noise_noise / 56
+  // 9 = random_hue_noise_saturation / 57
 
   // END OF CODES
   // ==================
 
+  // GO
   if (incomingByte == 103) {
     massAttatch();
     mode = "sweep";
+
+    new_color = true;
+
+    animate_all_equal = true;
+    animate_hsb = false;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 115) {
     // STOP movement
     // But have some nice visuals
-  } else if (incomingByte == 115) {
+
+    new_color = true;
+    
     mode = "stop";
     pos = 90;
     servo0.write(pos);
@@ -405,17 +431,137 @@ void loop() {
     servo14.write(pos);
     servo15.write(pos);
     delay(500);
+    
     massDetatch();
-
     rainbowCycle(20);
     
     return;
-  } else if (incomingByte == 22) {
-    massAttatch();
-    mode = "noise";
   } else if (incomingByte == 49) {
     massAttatch();
-    mode = "sweep";
+    mode = "all_same_sweep";
+    animate_noise = false;
+
+    new_color = true;
+
+    animate_all_equal = true;
+    animate_hsb = false;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 50) {
+    massAttatch();
+    mode = "all_same_noise";
+    animate_noise = true;
+    
+    new_color = true;
+
+    animate_all_equal = true;
+    animate_hsb = false;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 51) {
+    massAttatch();
+    mode = "hsb_saturation_sweep";
+    animate_noise = false;
+
+    new_color = true;
+
+    animate_all_equal = false;
+    animate_hsb = true;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 52) {
+    massAttatch();
+    mode = "hsb_saturation_noise";
+    animate_noise = true;
+
+    new_color = true;
+
+    animate_all_equal = false;
+    animate_hsb = true;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 53) {
+    massAttatch();
+    mode = "animate_hsb_sweep";
+    animate_noise = false;
+
+    new_color = true;
+
+    animate_all_equal = false;
+    animate_hsb = true;
+    animate_sb = true; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 54) {
+    massAttatch();
+    mode = "animate_hsb_noise";
+    animate_noise = true;
+
+    new_color = true;
+
+    animate_all_equal = false;
+    animate_hsb = true;
+    animate_sb = true; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 55) {
+    massAttatch();
+    mode = "hue_noise_sweep";
+
+    new_color = true;
+
+    animate_all_equal = false;
+    animate_hsb = false;
+    animate_sb = false; 
+    hsb_saturation = true;
+    noise_hue = false;
+    random_hue_noise_saturation = false;
+    
+  } else if (incomingByte == 56) {
+    massAttatch();
+    mode = "hue_noise_noise";
+
+    new_color = true;
+
+    animate_all_equal = false;
+    animate_hsb = false;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = true;
+    random_hue_noise_saturation = false;
+    
+  }else if (incomingByte == 57) {
+    massAttatch();
+    mode = "random_hue_noise_saturation";
+
+    animate_all_equal = false;
+    animate_hsb = false;
+    animate_sb = false; 
+    hsb_saturation = false;
+    noise_hue = false;
+    random_hue_noise_saturation = true;
+
+    if(new_color == true){
+      generateRandomColor();
+      new_color = false;
+    }
+    
   }
 
   current_millis = millis();
@@ -503,8 +649,6 @@ void loop() {
     
         // calculate the average:
         average[i] = total[i] / numReadings;
-
-//        printDistances(i);
         
         // save teh motor position and distance
         String tmp_string = (String)i_temp;
@@ -553,10 +697,7 @@ void loop() {
     
                 nh = snh.noise(xh, y);
                 xh += increase_sb;
-    
-                // this works for when it's being used for brightness..
-                // posh = (int)map(nh*100, -100, 100, 0, 255);
-    
+        
                 // this works best for saturation
                 posh = (int)map(nh*100, -100, 100, 100, 255);
           
@@ -594,8 +735,6 @@ void loop() {
               // this works best for saturation
               posh = (int)map(nh*100, -100, 100, 0, 360);
               int mapped_sensor_reading = (int)map(average[i], 0, 400, 100, 255);
-
-              // brightness = 255;
               
               String returnVal = getRGB(posh, mapped_sensor_reading, map(posh, 0, 360, 150, 255));
               // String returnVal = getRGB(posh, average[i], map(posh, 0, 360, 150, 255));
@@ -613,6 +752,31 @@ void loop() {
                                           
               strip.setPixelColor(pixl, strip.Color(r, g, b));  
             
+            } else if (random_hue_noise_saturation == true){
+              int low_color = random_color - 19;
+              int high_color = random_color + 19;
+
+              nh = snh.noise(xh, y);
+              xh += increase_sb;
+              posh = (int)map(nh*100, -100, 100, low_color, high_color);
+              int mapped_sensor_reading = (int)map(average[i], 0, 400, 100, 255);
+
+              String returnVal = getRGB(posh, mapped_sensor_reading, map(posh, low_color, high_color, 150, 255));
+
+              int commaIndex = returnVal.indexOf('/');
+              int secondCommaIndex = returnVal.indexOf('/', commaIndex + 1);
+    
+              String firstValue = returnVal.substring(0, commaIndex);
+              String secondValue = returnVal.substring(commaIndex + 1, secondCommaIndex);
+              String thirdValue = returnVal.substring(secondCommaIndex + 1); // To the end of the string
+    
+              int r = firstValue.toInt();
+              int g = secondValue.toInt();
+              int b = thirdValue.toInt();
+                                          
+              strip.setPixelColor(pixl, strip.Color(r, g, b));
+
+
             }
    
           }
@@ -730,6 +894,16 @@ void loop() {
   
   delay(2);
   
+}
+
+// generate color for HSB
+void generateRandomColor(){
+  random_color = random(20, 340);
+  Serial.println(random_color);
+  Serial.println(random_color);
+  Serial.println(random_color);
+  Serial.println(random_color);
+  Serial.println(random_color);
 }
 
 void printDistances(int i){
@@ -1031,21 +1205,3 @@ String getRGB(int hue, int sat, int val) {
   String valToReturn = String(r) + "/" + String(g) + "/" + String(b);
   return valToReturn;
 }
-//
-//// Returns the Red component of a 32-bit color
-//uint8_t Red(uint32_t color)
-//{
-//    return (color >> 16) & 0xFF;
-//}
-//
-//// Returns the Green component of a 32-bit color
-//uint8_t Green(uint32_t color)
-//{
-//    return (color >> 8) & 0xFF;
-//}
-//
-//// Returns the Blue component of a 32-bit color
-//uint8_t Blue(uint32_t color)
-//{
-//    return color & 0xFF;
-//}
