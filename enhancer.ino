@@ -45,7 +45,7 @@ byte a1;
 
 // NeoPixel parameters. These are configurable, but the pin number must
 // be different than the servo(s).
-#define NUMPIXELS          180
+#define NUMPIXELS          185
 #define LED_PIN            9
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUMPIXELS, LED_PIN);
 
@@ -643,7 +643,7 @@ void loop() {
         // Set next time this sensor will be pinged.
         pingTimer[i] += PING_INTERVAL * OBJECT_NUM;
         start_sensor();
-        distance[i] = analogRead(sensorPins[i])/2;
+        distance[i] = constrain(analogRead(sensorPins[i])/2, 0, 350);
         mappedDistance[i] = map(distance[i], 0, 350, 0, 250);
 
         total[i] = total[i] - readings[i][readIndex[i]];
@@ -675,7 +675,15 @@ void loop() {
     
             if(animate_all_equal == true){
               //NOTE: this works better then the averaging
-              strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+              
+              // continue working
+//              int white_correction = map(mappedDistance[i], 0, 255, 100, 250);
+//              strip.setPixelColor(pixl, strip.Color(white_correction, white_correction, white_correction);
+
+              // Below line looked a bit broken \|/
+              // ===
+               strip.setPixelColor(pixl, strip.Color(mappedDistance[i], mappedDistance[i], mappedDistance[i]));
+              // ===
               // strip.setPixelColor(pixl, strip.Color(average[i], average[i], average[i]));
             } else if(hsb_saturation == true){
                  
@@ -700,7 +708,7 @@ void loop() {
             } else if(animate_hsb == true) {
               // hue is a number between 0 and 360
               // int hue = map(mappedDistance[i],0, 250, 0, 359);
-              int hue = map(average[i],0, 250, 0, 359);     
+              int hue = map(average[i],0, 350, 0, 359);     
     
               if(animate_sb = true){
                 // saturation is a number between 0 - 255
@@ -744,7 +752,7 @@ void loop() {
     
               // this works best for saturation
               posh = (int)map(nh*100, -100, 100, 0, 360);
-              int mapped_sensor_reading = (int)map(average[i], 0, 400, 100, 255);
+              int mapped_sensor_reading = (int)map(average[i], 0, 350, 100, 255);
               
               String returnVal = getRGB(posh, mapped_sensor_reading, map(posh, 0, 360, 150, 255));
               // String returnVal = getRGB(posh, average[i], map(posh, 0, 360, 150, 255));
@@ -769,7 +777,7 @@ void loop() {
               nh = snh.noise(xh, y);
               xh += increase_sb;
               posh = (int)map(nh*100, -100, 100, low_color, high_color);
-              int mapped_sensor_reading = (int)map(average[i], 0, 400, 100, 255);
+              int mapped_sensor_reading = (int)map(average[i], 0, 350, 100, 255);
 
               String returnVal = getRGB(posh, mapped_sensor_reading, map(posh, low_color, high_color, 150, 255));
 
@@ -909,11 +917,6 @@ void loop() {
 // generate color for HSB
 void generateRandomColor(){
   random_color = random(20, 340);
-  Serial.println(random_color);
-  Serial.println(random_color);
-  Serial.println(random_color);
-  Serial.println(random_color);
-  Serial.println(random_color);
 }
 
 void printDistances(int i){
@@ -996,7 +999,6 @@ void StoreData(int id, int currentDistance)
       sweepString[id].concat("/");
       
       pingTotalCount[id]++;
-
       if(pingTotalCount[id] >= pingRemainderValue){
         SendBatchData(id);
         pingTotalCount[id] = 0;
@@ -1025,20 +1027,21 @@ void SendBatchData(int id) {
 //      Serial.println(addPannelToPublish.length());
 //      Serial.println("+++++++++++++++++++++++++");
 
-      if((int)addPannelToPublish.length() > (int)4){
+      if((int)addPannelToPublish.length() > (int)40){
         Serial.println(addPannelToPublish);
-        ResetPublishDataStatus();
+        ResetPublishDataStatus(id);
       }
   }
 }
 
-void ResetPublishDataStatus()
+void ResetPublishDataStatus(int i)
 {
+  sweepString[i] = "";
 
-  for (uint8_t i = 0; i < OBJECT_NUM; i++) {
-    int tmp = (int)i;
-    sweepString[tmp ] = "";
-  }
+//  for (uint8_t i = 0; i < OBJECT_NUM; i++) {
+//    int tmp = (int)i;
+//    sweepString[tmp ] = "";
+//  }
   
 }
 
